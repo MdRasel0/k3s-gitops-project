@@ -23,7 +23,7 @@ spec:
         enable-real-ip: "true"
         use-forwarded-headers: "true"
       extraArgs:
-        default-backend-service: "ingress-nginx/custom-404-backend"
+        default-backend-service: "ingress-nginx/ingress-nginx-defaultbackend"
     defaultBackend:
       enabled: true
       image:
