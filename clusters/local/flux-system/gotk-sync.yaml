@@ -11,11 +11,7 @@ spec:
     branch: main
   secretRef:
     name: flux-system
-<<<<<<< HEAD
   url: ssh://git@github.com/MdRasel0/k3s-gitops-project
-=======
-  url: ssh://git@github.com/subrotosharma/k8s-gitops-flux
->>>>>>> f266408 (gitops wordpress project)
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
