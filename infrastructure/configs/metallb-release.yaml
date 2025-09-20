@@ -5,21 +5,14 @@ metadata:
   namespace: metallb-system
 spec:
   interval: 5m
-  timeout: 10m
   chart:
     spec:
       chart: metallb
-      version: 0.14.3
+      version: 0.13.12
       sourceRef:
         kind: HelmRepository
         name: metallb
         namespace: flux-system
-  install:
-    crds: Create
-  upgrade:
-    crds: CreateReplace
   values:
     controller:
-      enabled: true
-    speaker:
-      enabled: true
+      logLevel: info
