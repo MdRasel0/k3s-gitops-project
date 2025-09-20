@@ -1,0 +1,85 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: metallb-config-applier
+  namespace: metallb-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: metallb-config-applier
+rules:
+- apiGroups: ["apiextensions.k8s.io"]
+  resources: ["customresourcedefinitions"]
+  verbs: ["get", "list"]
+- apiGroups: ["metallb.io"]
+  resources: ["ipaddresspools","l2advertisements"]
+  verbs: ["get","list","create","update","patch","apply"]
+- apiGroups: [""]
+  resources: ["namespaces","configmaps"]
+  verbs: ["get","list","create","update","patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: metallb-config-applier
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: metallb-config-applier
+subjects:
+- kind: ServiceAccount
+  name: metallb-config-applier
+  namespace: metallb-system
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: apply-metallb-config
+  namespace: metallb-system
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      serviceAccountName: metallb-config-applier
+      restartPolicy: Never
+      containers:
+      - name: wait-and-apply
+        image: bitnami/kubectl:1.30
+        command:
+        - /bin/sh
+        - -c
+        - |
+          set -euo pipefail
+          echo "Waiting for Metallb CRDs..."
+          until kubectl get crd ipaddresspools.metallb.io >/dev/null 2>&1; do
+            sleep 3
+          done
+          until kubectl get crd l2advertisements.metallb.io >/dev/null 2>&1; do
+            sleep 3
+          done
+          echo "CRDs ready. Applying Metallb pool & advertisement..."
+
+          cat <<'EOF' >/tmp/pool.yaml
+          apiVersion: metallb.io/v1beta1
+          kind: IPAddressPool
+          metadata:
+            name: default-pool
+            namespace: metallb-system
+          spec:
+            addresses:
+            - 192.168.50.200-192.168.50.220
+          ---
+          apiVersion: metallb.io/v1beta1
+          kind: L2Advertisement
+          metadata:
+            name: default-adv
+            namespace: metallb-system
+          spec:
+            ipAddressPools:
+            - default-pool
+          EOF
+
+          kubectl apply -f /tmp/pool.yaml
+          echo "Applied Metallb config."

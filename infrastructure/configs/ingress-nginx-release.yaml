@@ -1,0 +1,36 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: ingress-nginx
+  namespace: ingress-nginx
+spec:
+  interval: 5m
+  timeout: 15m
+  chart:
+    spec:
+      chart: ingress-nginx
+      version: 4.11.7
+      sourceRef:
+        kind: HelmRepository
+        name: ingress-nginx
+        namespace: flux-system
+  values:
+    controller:
+      service:
+        type: LoadBalancer
+      config:
+        custom-http-errors: "404"
+        enable-real-ip: "true"
+        use-forwarded-headers: "true"
+      extraArgs:
+        default-backend-service: "ingress-nginx/custom-404-backend"
+    defaultBackend:
+      enabled: true
+      image:
+        repository: registry.k8s.io/defaultbackend-amd64
+        tag: "1.5"
+      extraEnvs:
+      - name: ERROR_404_REDIRECT
+        value: "https://google.com"
+      service:
+        servicePort: 80
